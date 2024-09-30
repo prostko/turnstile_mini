@@ -44,7 +44,7 @@ module TurnstileMini
 
     def attempt_to_lock
       if current_lock.nil?
-        set_current_lock process_id
+        set_current_lock
       end
       current_lock
     end
@@ -57,7 +57,7 @@ module TurnstileMini
       current_lock == process_id
     end
 
-    def set_current_lock(new_lock)
+    def set_current_lock
       cache.set(@key, process_id)
       # expire redis key after 1 hour
       cache.expire(@key, 3600)
