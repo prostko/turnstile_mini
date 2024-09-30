@@ -1,41 +1,74 @@
-module TurnstileMutex
+require 'logging'
+require 'redis'
 
-  def self.get_current_lock(mutex_id)
-    DistributedMutex.new(mutex_id).current_lock
-  end
+module TurnstileMini
+  class TurnstileMutexTimeoutError < Exception; end
 
-  ##
-  # Wraps code that should only be run when the mutex has been obtained.
-  #
-  # The mutex_id uniquely identifies the section of code being run.
-  #
-  # You can optionally specify a :timeout to control how long to wait for the lock to be released
-  # before raising a MegaMutex::TimeoutError
-  #
-  #   with_distributed_mutex('my_mutex_id_1234', :timeout => 20) do
-  #     do_something!
-  #   end
-  def mutex_locking(mutex_id, options = {}, &block)
-    mutex = DistributedMutex.new(mutex_id, options[:timeout])
-    mutex.run(&block)
-  end
-
-  class Configuration
-    attr_accessor :redis_servers, :namespace
-
-    def initialize
-      @redis_servers = {:host => 'redis.dev', :port => 6379}
-      @namespace = 'mega_mutex'
-    end
-  end
-
-  class << self
-    def configure
-      yield configuration
+  class TurnstileMutex
+    class << self
+      def cache
+        @cache ||= Redis.new(TurnstileMini.configuration.redis_servers)
+      end
     end
 
-    def configuration
-      @configuration ||= Configuration.new
+    def initialize(key, timeout = 60, interval = 0.1)
+      @key = key
+      @timeout = timeout
+      @interval = interval
+    end
+
+    def run
+      @start_time = Time.now
+      yield
+    ensure
+      unlock!
+    end
+
+    def current_lock
+      cache.get(@key)
+    end
+
+    private
+
+    def timeout?
+      Time.now > @start_time + @timeout
+    end
+
+    def lock!
+      until timeout?
+        return if attempt_to_lock == my_lock_id
+        sleep(@interval)
+      end
+      raise TimeoutError.new("Failed to obtain a lock within #{@timeout} seconds.")
+    end
+
+    def attempt_to_lock
+      if current_lock.nil?
+        set_current_lock process_id
+      end
+      current_lock
+    end
+
+    def unlock!
+      cache.del(@key) if locked_by_me?
+    end
+
+    def locked_by_me?
+      current_lock == process_id
+    end
+
+    def set_current_lock(new_lock)
+      cache.set(@key, process_id)
+      # expire redis key after 1 hour
+      cache.expire(@key, 3600)
+    end
+
+    def process_id
+      @process_id ||= "#{Process.pid.to_s}#{Thread.current.object_id}#{Thread.current.to_s}"
+    end
+
+    def cache
+      self.class.cache
     end
   end
 end

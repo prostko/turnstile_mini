@@ -1,8 +1,8 @@
 # TurnstileMini
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/TurnstileMini`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+ Simple Redis-backed mutex
+ - Uses the given mutex_id to store a unique process id. That key.value is our mutex!
+ - Redis-backed means the mutex works wherever your distributed redis cache does
 
 ## Installation
 
@@ -16,17 +16,27 @@ If bundler is not being used to manage dependencies, install the gem by executin
 
 ## Usage
 
-TODO: Write usage instructions here
+     class SavingsAccountSweeper
+       include TurnstileMini
 
-## Development
+       def process_account_sweep
+         lock_with_mutex("SavingsAccountSweeper::nightly_account_sweep") do
+           process_sweep if should_sweep_account?
+         end
+       end
+     end
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+## Configuration 
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+*** Requires Redis ***
+By default, connects to the local redis server, but you can configure production, etc:
 
-## Contributing
+     REDIS_HOST = 'loremipsum'
+     REDIS_PORT = '5232'
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/TurnstileMini. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/TurnstileMini/blob/master/CODE_OF_CONDUCT.md).
+     TurnstileMini.configure do |config|
+       config.redis_servers = { host: REDIS_HOST, port: REDIS_PORT}
+     end
 
 ## License
 
