@@ -1,7 +1,7 @@
 # TurnstileMini
 
  Simple Redis-backed mutex
- - Uses the given mutex_id to store a unique process id. That key.value is our mutex!
+ - Uses the given mutex_id to store a unique process id, that key.value is our mutex
  - Redis-backed means the mutex works wherever your distributed redis cache does
 
 ## Installation
