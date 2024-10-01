@@ -4,6 +4,8 @@
  - Uses the given mutex_id to store a unique process id, that key.value is our mutex
  - Redis-backed means the mutex works wherever your distributed redis cache does
 
+* Does not guarantee order *
+
 ## Installation
 
 Install the gem and add to the application's Gemfile by executing:
@@ -25,6 +27,12 @@ If bundler is not being used to manage dependencies, install the gem by executin
          end
        end
      end
+
+     # options = {
+         timeout: 60,    # seconds to wait for lock before raising, default 60
+         interval: 0.001 # seconds interval to wait before checking for lock release, default 0.01
+     # }
+     # Use lock_with_mutex(:mutexid, options )
 
 ## Configuration 
 
