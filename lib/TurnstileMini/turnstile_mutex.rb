@@ -1,4 +1,4 @@
-require 'logging'
+require 'logger'
 require 'redis'
 
 module TurnstileMini
