@@ -19,7 +19,7 @@ module TurnstileMini
   #     maximize_customercentric_synergy!
   #     scale_cross_functional_methodologies!
   #   end
-  def lock_with_mutex(mutex_id, options: { timeout: 60 }, &block)
+  def self.lock_with_mutex(mutex_id, options: { timeout: 60 }, &block)
     mutex = TurnstileMutex.new(mutex_id, options[:timeout])
 
     mutex.run(&block)
